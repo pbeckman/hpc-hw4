@@ -1,0 +1,102 @@
+\documentclass{article}
+\usepackage{
+  amsmath, amsthm, amssymb, amsfonts, 
+  mathtools, xfrac, dsfont, mathrsfs, bm
+  }
+\usepackage{hyperref, float, parskip}
+\usepackage[margin=0.8in]{geometry}
+\usepackage[justification=centering,labelfont=bf]{caption}
+\renewcommand{\arraystretch}{1.3}
+
+% grouping and bookending
+\newcommand{\pr}[1]{\left(#1\right)}
+\newcommand{\br}[1]{\left[#1\right]}
+\newcommand{\cbr}[1]{\left\{#1\right\}}
+\newcommand{\floor}[1]{\left\lfloor#1\right\rfloor}
+\newcommand{\ceil}[1]{\left\lceil#1\right\rceil}
+\newcommand{\abs}[1]{\left|#1\right|}
+\newcommand{\norm}[1]{\left\lVert#1\right\rVert}
+\newcommand{\ip}[1]{\left\langle#1\right\rangle}
+\renewcommand{\vec}[1]{\left\langle#1\right\rangle}
+% derivatives
+\newcommand{\der}[2]{\frac{d #1}{d #2}}
+\newcommand{\mder}[2]{\frac{D #1}{D #2}}
+\newcommand{\pder}[2]{\frac{\partial #1}{\partial #2}}
+% common bold and script letters
+\newcommand{\C}{\mathbb{C}}
+\newcommand{\E}{\mathbb{E}}
+\newcommand{\F}{\mathcal{F}}
+\newcommand{\G}{\mathcal{G}}
+\renewcommand{\L}{\mathscr{L}}
+\newcommand{\N}{\mathbb{N}}
+\renewcommand{\O}{\mathcal{O}}
+\renewcommand{\P}{\mathbb{P}}
+\newcommand{\Q}{\mathbb{Q}}
+\newcommand{\R}{\mathbb{R}}
+\renewcommand{\S}{\mathbb{S}}
+\newcommand{\Z}{\mathbb{Z}}
+% math operators
+\DeclareMathOperator{\Cov}{Cov}
+\DeclareMathOperator{\Var}{Var}
+\let\Re\relax
+\DeclareMathOperator{\Re}{Re}
+\let\Im\relax
+\DeclareMathOperator{\Im}{Im}
+\DeclareMathOperator{\diag}{diag}
+\DeclareMathOperator{\tr}{tr}
+\DeclareMathOperator*{\argmax}{arg\,max}
+\DeclareMathOperator*{\argmin}{arg\,min}
+% misc
+\newcommand{\mat}[1]{\begin{bmatrix}#1\end{bmatrix}}
+\newcommand{\ind}[1]{\mathds{1}_{#1}}
+\renewcommand{\epsilon}{\varepsilon}
+
+\setlength\parindent{0pt}
+
+\title{High Performance Computing: Homework 4}
+\author{Paul Beckman}
+\date{}
+
+\begin{document}
+
+\maketitle
+
+\section{Matrix-vector operations on a GPU}
+Computing the matrix vector product between $\bm{A} \in \R^{N \times N}$ and $\bm{b} \in \R^N$ for $N = 2^{13}$ gives the following timings using \texttt{OMP\_NUM\_THREADS = 8} for both machines.
+
+On \texttt{cuda2} with \texttt{Intel Xeon E5-2660 (2.60 GHz)} CPU and \texttt{GeForce RTX 2080 Ti} GPU:
+\begin{verbatim}
+  CPU: 0.292824 s
+  CPU Bandwidth = 5.500280 GB/s
+
+  GPU: 0.007551 s (0.091952 s total)
+  GPU Bandwidth = 17.515802 GB/s 
+\end{verbatim}
+and on \texttt{cuda5} with \texttt{Intel Xeon E5-2650 (2.60 GHz)} CPU and \texttt{GeForce GTX TITAN Z} GPU:
+\begin{verbatim}
+  CPU: 0.431621 s
+  CPU Bandwidth = 3.731541 GB/s
+
+  GPU: 0.006431 s (0.195043 s total)
+  GPU Bandwidth = 8.257744 GB/s 
+\end{verbatim}
+where the total time includes memory transfer to and from the GPU. We see in both cases that the GPU gives significant speedups, and that the data transfer totally dominates the runtime.
+
+\section{2D Jacobi method on a GPU}
+Again using \texttt{cuda2} with \texttt{Intel Xeon E5-2660 (2.60 GHz)} CPU and \texttt{GeForce RTX 2080 Ti} GPU and \\ \texttt{OMP\_NUM\_THREADS = 8}, we observe the following timings for 100 iterations of Jacobi
+\begin{verbatim}
+    N    CPU time    GPU time   GPU total
+  128   1.020e-02   4.675e-01   4.677e-01
+  256   2.839e-02   4.746e-01   4.751e-01
+  512   8.995e-02   4.929e-01   4.940e-01
+ 1024   2.770e-01   5.299e-01   5.335e-01
+ 2048   1.104e+00   6.118e-01   6.256e-01
+ 4096   4.228e+00   8.003e-01   8.567e-01
+ 8192   1.751e+01   1.942e+00   2.172e+00
+\end{verbatim}
+We note that the CPU obtains superior performance for small $N$, but for $N > 1024$ the GPU is faster. Memory transfer is a much smaller fraction of the total computation time here than in the matvec above, likely because of the need to synchronize the GPU within each iteration, which slows down the body of the computation significantly.
+
+\section{Update on final project}
+We have implemented a serial version of the Barnes-Hut multipole algorithm built on a tree data structure. Some debugging remains, but it is almost complete. We are realizing that this tree-based implementation may prove difficult to parallelize due to its reliance on recursive function calls and pointer linkages. So after we finish a basic OpenMP implementation of our tree-based, we may experiment with developing an alternative implementation based on array data structures for more efficient parallelization.
+
+\end{document}
